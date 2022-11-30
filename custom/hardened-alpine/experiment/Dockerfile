@@ -53,13 +53,10 @@ RUN curl -L https://storage.googleapis.com/kubernetes-release/release/${KUBE_LAT
 #Installing crictl binaries
 RUN curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.16.0/crictl-v1.16.0-linux-${TARGETARCH}.tar.gz --output crictl-v1.16.0-linux-${TARGETARCH}.tar.gz && \
     tar zxvf crictl-v1.16.0-linux-${TARGETARCH}.tar.gz -C /usr/local/bin
-    
-#Installing pumba binaries
-ENV PUMBA_VERSION="0.8.0"
-RUN curl -L https://github.com/alexei-led/pumba/releases/download/${PUMBA_VERSION}/pumba_linux_${TARGETARCH} --output /usr/local/bin/pumba && chmod +x /usr/local/bin/pumba
 
 #Installing promql cli binaries
-RUN curl -L https://github.com/chaosnative/promql-cli/releases/download/2.6.0/promql_linux_${TARGETARCH} --output /usr/local/bin/promql && chmod +x /usr/local/bin/promql
+COPY promql /usr/local/bin/promql
+RUN chmod +x /usr/local/bin/promql
 
 #Installing nsutil cli binaries
 RUN curl -L https://github.com/litmuschaos/test-tools/releases/download/${LITMUS_VERSION}/nsutil-linux-${TARGETARCH} --output /usr/local/bin/nsutil && chmod +x /usr/local/bin/nsutil
@@ -68,7 +65,8 @@ RUN curl -L https://github.com/litmuschaos/test-tools/releases/download/${LITMUS
 RUN curl -L https://github.com/litmuschaos/test-tools/releases/download/${LITMUS_VERSION}/pause-linux-${TARGETARCH} --output /usr/local/bin/pause && chmod +x /usr/local/bin/pause
 
 #Installing dns_interceptor cli binaries
-RUN curl -L https://github.com/litmuschaos/test-tools/releases/download/${LITMUS_VERSION}/dns_interceptor --output /usr/local/bin/dns_interceptor && chmod +x /usr/local/bin/dns_interceptor
+COPY dns_interceptor /usr/local/bin/dns_interceptor
+RUN chmod +x /usr/local/bin/dns_interceptor
 
 COPY --from=docker:19.03 /usr/local/bin/docker /usr/local/bin/
 
