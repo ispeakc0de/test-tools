@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -52,7 +53,7 @@ func init() {
 
 // nsutil handles the task of executing the required process in the given namespaces
 func nsutil(cmd *cobra.Command, args []string) {
-	nsMap := getNSFiles()
+	//nsMap := getNSFiles()
 
 	// target command
 	nCmd := exec.Command(args[0], args[1:]...)
@@ -67,22 +68,29 @@ func nsutil(cmd *cobra.Command, args []string) {
 	go func() {
 		runtime.LockOSThread()
 		defer runtime.UnlockOSThread()
-		for n, f := range nsMap {
-			nsType := 0
-			if n == "mnt" {
-				log.Info("mounting mnt ns")
-				nsType = unix.CLONE_NEWNS
-			}
-			if err := unix.Setns(int(f.Fd()), nsType); err != nil {
-				stat, err1 := f.Stat()
-				if err1 != nil {
-					log.Error("error1", err1)
-				}
-				log.Info("fd ", stat)
-				log.WithError(err).WithField("ns-type", n).Fatal("Failed to setns")
-			}
+		pidPath := fmt.Sprintf(("/proc/%d/ns/pid",t)
+		mntPath := fmt.Sprintf(("/proc/%d/ns/mnt",t)
+		filePid, err := os.Open(pidPath)
+		if err != nil {
+			log.Error("failed to open pid file")
 		}
-		err := nCmd.Run()
+
+		if err := unix.Setns(int(filePid.Fd()), unix.CLONE_NEWPID); err != nil {
+			log.WithError(err).WithField("ns-type", "pid").Fatal("Failed to setns")
+		}
+
+		fileMnt, err := os.Open(mntPath)
+		if err != nil {
+			log.Error("failed to open mnt file")
+		}
+
+		if err := unix.Setns(int(fileMnt.Fd()), unix.CLONE_NEWNS); err != nil {
+			log.WithError(err).WithField("ns-type", "mnt").Fatal("Failed to setns")
+		}
+
+		
+
+		err = nCmd.Run()
 		if err != nil {
 			log.WithError(err).WithField("cmd", nCmd.String()).Fatal("Failed to run command")
 		}
@@ -105,43 +113,43 @@ func nsutil(cmd *cobra.Command, args []string) {
 	log.Infof("Signal (%v) received, stopping", s)
 }
 
-// getNSFiles generates a map of all the required ns files
-func getNSFiles() map[string]*os.File {
-	nsMap := map[string]*os.File{}
-	for i, n := range ns {
-		if !nsSelected[i] {
-			continue
-		}
-		file, err := getFileFromNS("/proc/" + strconv.Itoa(t) + "/ns/" + n)
-		if err != nil {
-			log.WithError(err).Fatal("Failed to get ns file")
-		}
-		nsMap[n] = file
-	}
-	return nsMap
-}
+//// getNSFiles generates a map of all the required ns files
+//func getNSFiles() map[string]*os.File {
+//	nsMap := map[string]*os.File{}
+//	for i, n := range ns {
+//		if !nsSelected[i] {
+//			continue
+//		}
+//		file, err := getFileFromNS("/proc/" + strconv.Itoa(t) + "/ns/" + n)
+//		if err != nil {
+//			log.WithError(err).Fatal("Failed to get ns file")
+//		}
+//		nsMap[n] = file
+//	}
+//	return nsMap
+//}
 
-// getFileFromNS gets the os.File pointer for the required ns
-func getFileFromNS(nsPath string) (*os.File, error) {
-	stat := syscall.Statfs_t{}
-	if err := syscall.Statfs(nsPath, &stat); err != nil {
-		return nil, fmt.Errorf("failed to Statfs %q: %v", nsPath, err)
-	}
-
-	switch stat.Type {
-	case nsFSMagic, procFSMagic:
-		break
-	default:
-		return nil, fmt.Errorf("unknown FS magic on %q: %x", nsPath, stat.Type)
-	}
-
-	file, err := os.Open(nsPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return file, nil
-}
+//// getFileFromNS gets the os.File pointer for the required ns
+//func getFileFromNS(nsPath string) (*os.File, error) {
+//	stat := syscall.Statfs_t{}
+//	if err := syscall.Statfs(nsPath, &stat); err != nil {
+//		return nil, fmt.Errorf("failed to Statfs %q: %v", nsPath, err)
+//	}
+//
+//	switch stat.Type {
+//	case nsFSMagic, procFSMagic:
+//		break
+//	default:
+//		return nil, fmt.Errorf("unknown FS magic on %q: %x", nsPath, stat.Type)
+//	}
+//
+//	file, err := os.Open(nsPath)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	return file, nil
+//}
 
 // Execute is the entrypoint for the cli tool
 func Execute() {
