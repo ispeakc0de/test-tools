@@ -3,16 +3,13 @@ package cmd
 import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 	"golang.org/x/sys/unix"
 	"os"
 	"os/exec"
 	"os/signal"
 	"runtime"
-	"strconv"
 	"syscall"
-	"time"
-
-	"github.com/spf13/cobra"
 )
 
 // user and mnt ns not supported
@@ -68,8 +65,8 @@ func nsutil(cmd *cobra.Command, args []string) {
 	go func() {
 		runtime.LockOSThread()
 		defer runtime.UnlockOSThread()
-		pidPath := fmt.Sprintf(("/proc/%d/ns/pid",t)
-		mntPath := fmt.Sprintf(("/proc/%d/ns/mnt",t)
+		pidPath := fmt.Sprintf("/proc/%d/ns/pid", t)
+		mntPath := fmt.Sprintf("/proc/%d/ns/mnt", t)
 		filePid, err := os.Open(pidPath)
 		if err != nil {
 			log.Error("failed to open pid file")
@@ -87,8 +84,6 @@ func nsutil(cmd *cobra.Command, args []string) {
 		if err := unix.Setns(int(fileMnt.Fd()), unix.CLONE_NEWNS); err != nil {
 			log.WithError(err).WithField("ns-type", "mnt").Fatal("Failed to setns")
 		}
-
-		
 
 		err = nCmd.Run()
 		if err != nil {
