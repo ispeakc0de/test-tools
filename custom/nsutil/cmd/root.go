@@ -74,6 +74,11 @@ func nsutil(cmd *cobra.Command, args []string) {
 				nsType = unix.CLONE_NEWNS
 			}
 			if err := unix.Setns(int(f.Fd()), nsType); err != nil {
+				stat, err1 := f.Stat()
+				if err1 != nil {
+					log.Error("error1", err1)
+				}
+				log.Info("fd ", stat)
 				log.WithError(err).WithField("ns-type", n).Fatal("Failed to setns")
 			}
 		}
