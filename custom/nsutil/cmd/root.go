@@ -42,6 +42,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&nsSelected[3], "uts", "u", false, "uts namespace to enter")
 	rootCmd.PersistentFlags().BoolVarP(&nsSelected[4], "ipc", "i", false, "ipc namespace to enter")
 	rootCmd.PersistentFlags().BoolVarP(&nsSelected[5], "mnt", "m", false, "mnt namespace to enter")
+
 	rootCmd.PersistentFlags().IntVarP(&t, "target", "t", 0, "target process id (required)")
 	err := rootCmd.MarkPersistentFlagRequired("target")
 	if err != nil {
@@ -67,7 +68,12 @@ func nsutil(cmd *cobra.Command, args []string) {
 		runtime.LockOSThread()
 		defer runtime.UnlockOSThread()
 		for n, f := range nsMap {
-			if err := unix.Setns(int(f.Fd()), 0); err != nil {
+			nsType := 0
+			if n == "mnt" {
+				log.Info("mounting mnt ns")
+				nsType = unix.CLONE_NEWNS
+			}
+			if err := unix.Setns(int(f.Fd()), nsType); err != nil {
 				log.WithError(err).WithField("ns-type", n).Fatal("Failed to setns")
 			}
 		}
