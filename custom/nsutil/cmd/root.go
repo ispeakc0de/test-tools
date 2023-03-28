@@ -15,7 +15,7 @@ import (
 )
 
 // user and mnt ns not supported
-var ns = []string{"net", "pid", "cgroup", "uts", "ipc"}
+var ns = []string{"net", "pid", "cgroup", "uts", "ipc", "mnt"}
 var nsSelected = make([]bool, 6)
 
 var t int // target pid
@@ -41,6 +41,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&nsSelected[2], "cgroup", "c", false, "cgroup namespace to enter")
 	rootCmd.PersistentFlags().BoolVarP(&nsSelected[3], "uts", "u", false, "uts namespace to enter")
 	rootCmd.PersistentFlags().BoolVarP(&nsSelected[4], "ipc", "i", false, "ipc namespace to enter")
+	rootCmd.PersistentFlags().BoolVarP(&nsSelected[5], "mnt", "m", false, "mnt namespace to enter")
 	rootCmd.PersistentFlags().IntVarP(&t, "target", "t", 0, "target process id (required)")
 	err := rootCmd.MarkPersistentFlagRequired("target")
 	if err != nil {
