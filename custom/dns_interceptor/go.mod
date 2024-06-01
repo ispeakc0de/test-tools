@@ -1,6 +1,6 @@
 module github.com/litmuschaos/dns_interceptor
 
-go 1.20
+go 1.22
 
 require (
 	github.com/miekg/dns v1.1.41
