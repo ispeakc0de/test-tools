@@ -20,6 +20,17 @@ jobs:
       - name: checking syntax of shell script
         run: bash -c 'shopt -s globstar nullglob; shellcheck **/*.{sh,ksh,bash}' || true
 
+  gitleaks-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Run GitLeaks
+        run: |
+          wget https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz && \
+          tar -zxvf gitleaks_8.18.2_linux_x64.tar.gz && \
+          sudo mv gitleaks /usr/local/bin && gitleaks detect --source . -v
 
   changes:
     runs-on: ubuntu-latest
@@ -62,7 +73,7 @@ jobs:
       mongo-utils: ${{ steps.filter.outputs.mongo-utils }}
       litmusctl: ${{ steps.filter.outputs.litmusctl }}
       litmus-redis-load: ${{ steps.filter.outputs.litmus-redis-load }} 
-      litmus-snyk-image:  ${{ steps.filter.outputs.litmus-snyk-image }} 
+      litmus-helm-agent: ${{ steps.filter.outputs.litmus-helm-agent }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -141,8 +152,8 @@ jobs:
               - 'custom/litmusctl/**'
             litmus-redis-load:
               - 'custom/workflow-helper/redis-helper/load-gen/**'
-            litmus-snyk-image:
-              - 'custom/security/snyk/**'
+            litmus-helm-agent:
+              - 'custom/litmus-helm-agent/**'
 
   litmus-app-deployer:
     runs-on: ubuntu-latest
@@ -253,17 +264,6 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
       - name: Building cassandra-client image
         run: make cassandra-client
-
-  litmus-snyk-image:
-    runs-on: ubuntu-latest
-    needs: changes
-    if: needs.changes.outputs.litmus-snyk-image == 'true'
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-      - name: Building litmus-snyk-image image
-        run: make litmus-snyk-image
 
   litmus-argocli:
     runs-on: ubuntu-latest
@@ -556,3 +556,16 @@ jobs:
       - name: Building litmus-redis-load image
         run: |
           make litmus-redis-load
+
+  litmus-helm-agent:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.litmus-helm-agent == 'true'
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Building litmus-helm-agent image
+        run: |
+          make docker.buildx 
+          make litmus-helm-agent
