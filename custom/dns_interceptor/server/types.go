@@ -17,8 +17,9 @@ const (
 )
 
 type InterceptorSettings struct {
-	TargetHostNames []string
-	SpoofMap        map[string]string
+	TargetHostNames       []string
+	SpoofMap              map[string]string
+	TransactionPercentage int
 	MatchType
 	ChaosType
 }

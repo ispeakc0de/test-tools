@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/miekg/dns"
 	log "github.com/sirupsen/logrus"
+	"math/rand"
 	"strings"
 	"time"
 )
@@ -91,13 +92,13 @@ func (d *DNSInterceptor) dnsHandler(writer dns.ResponseWriter, msg *dns.Msg) {
 		queryName := strings.TrimRight(question.Name, ".")
 		switch d.settings.ChaosType {
 		case Error:
-			if d.isChaosTarget(queryName) {
+			if d.isChaosTarget(queryName) && d.spin() {
 				log.WithField("query", question.Name).Info("Chaos target found")
 				writer.WriteMsg(msg)
 				return
 			}
 		case Spoof:
-			if d.settings.SpoofMap != nil && (question.Qtype == dns.TypeA || question.Qtype == dns.TypeAAAA) {
+			if d.settings.SpoofMap != nil && (question.Qtype == dns.TypeA || question.Qtype == dns.TypeAAAA) && d.spin() {
 				copyQuestion := msg.Question[0]
 				if target, ok := d.settings.SpoofMap[queryName]; ok {
 					log.WithField("query", question.Name).Info("Chaos target found")
@@ -154,4 +155,16 @@ func (d *DNSInterceptor) isChaosTarget(query string) bool {
 		}
 	}
 	return false
+}
+
+func (d *DNSInterceptor) spin() bool {
+	if d.settings.TransactionPercentage == 0 {
+		return true
+	}
+	return getRandomNumber(101) <= d.settings.TransactionPercentage
+}
+func getRandomNumber(upperBound int) int {
+	// Seed the random number generator with the current time
+	rand.Seed(time.Now().UnixNano())
+	return rand.Intn(upperBound)
 }

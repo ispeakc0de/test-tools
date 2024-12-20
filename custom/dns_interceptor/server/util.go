@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -17,7 +18,18 @@ func getInterceptorSettings() (*InterceptorSettings, error) {
 	spoofMap := os.Getenv("SPOOF_MAP")
 	chaosType := os.Getenv("CHAOS_TYPE")
 	matchType := os.Getenv("MATCH_SCHEME")
+	transactionPercentage := os.Getenv("TRANSACTION_PERCENTAGE")
 	interceptorSettings := InterceptorSettings{}
+
+	if transactionPercentage == "" {
+		interceptorSettings.TransactionPercentage = 0
+	} else {
+		percentage, err := strconv.Atoi(transactionPercentage)
+		if err != nil {
+			return nil, errors.New("failed to parse transaction percentage : " + err.Error())
+		}
+		interceptorSettings.TransactionPercentage = percentage
+	}
 
 	if targets == "" {
 		interceptorSettings.TargetHostNames = nil
